@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { X, RefreshCw, LogOut, Plus, Trash2, Users, ListChecks, TriangleAlert, Pencil } from 'lucide-react';
+import { X, RefreshCw, LogOut, Plus, Trash2, Users, ListChecks, TriangleAlert, Pencil, Eye, Lock } from 'lucide-react';
 import { UM6PLogo } from '../brand/UM6PLogo';
 import { STATUS_STYLE } from '../projects/ProgressStrip';
 import { PROJECTS } from '../../data/projects';
+import { BUILT_SESSIONS, refreshReleases, setReleasesLocal, useReleases } from '../../lib/releases';
 import { COURSE_SESSIONS } from '../../data/sessions';
 import {
   STATUS_LABEL,
@@ -13,6 +14,7 @@ import {
   deleteTeam,
   fetchRoster,
   saveProgress,
+  saveRelease,
   signOut,
   updateStudent,
   updateTeam,
@@ -38,7 +40,7 @@ interface Props {
 /** Teacher-only: roster, teams, project assignments and progress per session. */
 const TeacherPanel: React.FC<Props> = ({ onClose }) => {
   const [data, setData] = useState<RosterData | null>(null);
-  const [tab, setTab] = useState<'teams' | 'progress'>('teams');
+  const [tab, setTab] = useState<'teams' | 'progress' | 'sessions'>('teams');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -95,6 +97,7 @@ const TeacherPanel: React.FC<Props> = ({ onClose }) => {
               [
                 ['teams', 'Teams & projects', Users],
                 ['progress', 'Progress', ListChecks],
+                ['sessions', 'Sessions', Eye],
               ] as const
             ).map(([id, label, Ico]) => (
               <button
@@ -148,6 +151,8 @@ const TeacherPanel: React.FC<Props> = ({ onClose }) => {
           <p className="text-sm text-[#6E6D70]">{busy ? 'Loading…' : 'No data.'}</p>
         ) : tab === 'teams' ? (
           <TeamsTab data={data} act={act} />
+        ) : tab === 'sessions' ? (
+          <SessionsTab act={act} />
         ) : (
           <ProgressTab data={data} act={act} />
         )}
@@ -157,6 +162,62 @@ const TeacherPanel: React.FC<Props> = ({ onClose }) => {
 };
 
 type Act = (fn: () => Promise<unknown>) => Promise<void>;
+
+/* --------------------------------------------------------- sessions tab */
+
+/** The teacher decides which sessions students can open. Teachers always see everything. */
+const SessionsTab: React.FC<{ act: Act }> = ({ act }) => {
+  const releases = useReleases();
+  const toggle = (id: number) => {
+    const next = !releases[id];
+    setReleasesLocal({ ...releases, [id]: next });
+    act(async () => {
+      try {
+        await saveRelease(id, next);
+      } finally {
+        await refreshReleases();
+      }
+    });
+  };
+  return (
+    <div className="max-w-3xl mx-auto space-y-4">
+      <p className="text-sm text-[#525254]">
+        Switch a session on to let students open it; switch it off to hide it again. You always see every session. Changes reach
+        students within seconds (when they reload or come back to the tab).
+      </p>
+      <div className="bg-white border border-[#E8E2D9] rounded-2xl divide-y divide-[#F0EBE3] shadow-xs">
+        {COURSE_SESSIONS.map((s) => {
+          const built = BUILT_SESSIONS.includes(s.id);
+          const on = releases[s.id] === true;
+          return (
+            <div key={s.id} className="flex items-center gap-4 px-4 py-3">
+              <span className="text-xs font-mono font-bold text-[#E5391C] w-10">S{String(s.id).padStart(2, '0')}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate">{s.title}</div>
+                <div className="text-xs text-[#6E6D70]">
+                  {built ? (on ? 'Open to students' : 'Hidden from students') : 'Slides not built yet'}
+                </div>
+              </div>
+              <button
+                role="switch"
+                aria-checked={on}
+                disabled={!built}
+                onClick={() => toggle(s.id)}
+                title={built ? (on ? 'Hide from students' : 'Open to students') : 'Not built yet'}
+                className={`relative w-12 h-7 rounded-full transition-colors ${
+                  !built ? 'bg-[#E8E2D9] cursor-not-allowed opacity-60' : on ? 'bg-emerald-500 cursor-pointer' : 'bg-[#B0AEB2] cursor-pointer'
+                }`}
+              >
+                <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
+                {!built && <Lock className="absolute inset-0 m-auto w-3 h-3 text-[#6E6D70]" />}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 /* ------------------------------------------------------------ teams tab */
 

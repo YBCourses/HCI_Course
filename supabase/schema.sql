@@ -60,3 +60,24 @@ create or replace view public.public_team_progress as
   where t.project_id is not null;
 
 grant select on public.public_team_members, public.public_team_progress to anon, authenticated;
+
+-- Which sessions students can open (the teacher decides). Everyone may read; only the teacher may change.
+create table if not exists public.session_release (
+  session int primary key check (session between 1 and 12),
+  released boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+insert into public.session_release (session, released)
+  select s, s in (1, 2) from generate_series(1, 12) s
+  on conflict (session) do nothing;
+
+alter table public.session_release enable row level security;
+grant select on public.session_release to anon, authenticated;
+grant insert, update, delete on public.session_release to authenticated;
+
+drop policy if exists everyone_reads on public.session_release;
+drop policy if exists teacher_writes on public.session_release;
+create policy everyone_reads on public.session_release for select to anon, authenticated using (true);
+create policy teacher_writes on public.session_release for all to authenticated
+  using (lower(auth.jwt() ->> 'email') = 'yassine.benaboud@gmail.com')
+  with check (lower(auth.jwt() ->> 'email') = 'yassine.benaboud@gmail.com');

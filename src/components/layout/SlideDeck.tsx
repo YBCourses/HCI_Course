@@ -27,10 +27,15 @@ import { SLIDES_DATA, ACTS_METADATA } from '../../data/slides';
 import { SLIDES_DATA_SESSION_2, ACTS_METADATA_SESSION_2 } from '../../data/slidesSession2';
 import { SlideRenderer } from '../slides/SlideRenderer';
 import { SlideRendererSession2 } from '../slides/SlideRendererSession2';
+import { SlideRendererSession3 } from '../slides/SlideRendererSession3';
+import { SLIDES_DATA_SESSION_3, ACTS_METADATA_SESSION_3 } from '../../data/slidesSession3';
 import { SlideDemoControlSample, DEMO_SLIDES, DEMO_SLIDE_COUNT } from '../slides/SlideDemoControlSample';
 import { PresenterNotes } from './PresenterNotes';
 import { SlideNavigator } from './SlideNavigator';
 import { ClassroomTimer } from './ClassroomTimer';
+import { canOpenSession, useReleases, useReleasesReady } from '../../lib/releases';
+import { BUILT_SESSIONS } from '../../lib/releases';
+import { ComingSoon } from './ComingSoon';
 import { ErrorGuard } from './ErrorGuard';
 import { SlideTransition } from '../transitions/SlideTransition';
 import { UM6PLogo } from '../brand/UM6PLogo';
@@ -86,13 +91,17 @@ export const SlideDeck: React.FC = () => {
   // Teacher mode: ?teacher plus a verified sign-in
   const teacherAuthed = useTeacherAuthed();
   const showTeacher = IS_TEACHER && teacherAuthed;
+  const releases = useReleases();
+  const releasesReady = useReleasesReady();
+  const canOpen = (id: number) => canOpenSession(id, releases, showTeacher);
+  const nothingOpen = !BUILT_SESSIONS.some((id) => canOpen(id));
   const showTeacherRef = useRef<boolean>(false);
   showTeacherRef.current = showTeacher;
   const [isClassOpen, setIsClassOpen] = useState<boolean>(false);
 
   // Active session data source
-  const activeSlides = activeSessionId === 2 ? SLIDES_DATA_SESSION_2 : SLIDES_DATA;
-  const activeActs = activeSessionId === 2 ? ACTS_METADATA_SESSION_2 : ACTS_METADATA;
+  const activeSlides = activeSessionId === 3 ? SLIDES_DATA_SESSION_3 : activeSessionId === 2 ? SLIDES_DATA_SESSION_2 : SLIDES_DATA;
+  const activeActs = activeSessionId === 3 ? ACTS_METADATA_SESSION_3 : activeSessionId === 2 ? ACTS_METADATA_SESSION_2 : ACTS_METADATA;
 
   // --------------------------------------------------------------------------
   // ADAPTIVE UNIVERSAL DISPLAY & PROJECTION STATE
@@ -121,6 +130,18 @@ export const SlideDeck: React.FC = () => {
     setActiveSessionId(sessionId);
     setCurrentIndex(0);
   };
+
+  // If the session on screen is not open to students (yet, or any more), move to the latest open one.
+  useEffect(() => {
+    if (!canOpenSession(activeSessionId, releases, showTeacher)) {
+      const open = [2, 1].find((id) => canOpenSession(id, releases, showTeacher));
+      if (open && open !== activeSessionId) {
+        setIsDemoMode(false);
+        setActiveSessionId(open);
+        setCurrentIndex(0);
+      }
+    }
+  }, [releases, showTeacher, activeSessionId]);
 
   // --------------------------------------------------------------------------
   // RESIZE OBSERVER: Live container measurement for any projector or window
@@ -468,6 +489,12 @@ export const SlideDeck: React.FC = () => {
                       onPrev={goToPrevSlide}
                       onSelect={setDemoSlideIndex}
                     />
+                  ) : activeSessionId === 3 ? (
+                    <SlideRendererSession3
+                      slide={currentSlide}
+                      onNextSlide={goToNextSlide}
+                      onOpenTimer={openTimerWithSettings}
+                    />
                   ) : activeSessionId === 2 ? (
                     <SlideRendererSession2
                       slide={currentSlide}
@@ -502,6 +529,12 @@ export const SlideDeck: React.FC = () => {
                       onNext={goToNextSlide}
                       onPrev={goToPrevSlide}
                       onSelect={setDemoSlideIndex}
+                    />
+                  ) : activeSessionId === 3 ? (
+                    <SlideRendererSession3
+                      slide={currentSlide}
+                      onNextSlide={goToNextSlide}
+                      onOpenTimer={openTimerWithSettings}
                     />
                   ) : activeSessionId === 2 ? (
                     <SlideRendererSession2
@@ -568,7 +601,7 @@ export const SlideDeck: React.FC = () => {
                   🔬 DEMO STD
                 </button>
               )}
-              <button
+              {canOpen(1) && <button
                 onClick={() => {
                   setIsDemoMode(false);
                   switchSession(1);
@@ -581,8 +614,8 @@ export const SlideDeck: React.FC = () => {
                 title="Switch to Session 1: Foundations (Protected Reference)"
               >
                 S01
-              </button>
-              <button
+              </button>}
+              {canOpen(2) && <button
                 onClick={() => {
                   setIsDemoMode(false);
                   switchSession(2);
@@ -595,7 +628,21 @@ export const SlideDeck: React.FC = () => {
                 title="Switch to Session 2: Cognitive & Motor Mechanics"
               >
                 S02
-              </button>
+              </button>}
+              {canOpen(3) && <button
+                onClick={() => {
+                  setIsDemoMode(false);
+                  switchSession(3);
+                }}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                  !isDemoMode && activeSessionId === 3
+                    ? 'bg-[#E5391C] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+                title="Switch to Session 3: The User"
+              >
+                S03
+              </button>}
             </div>
 
             <div className="flex items-center gap-2">
@@ -923,6 +970,9 @@ export const SlideDeck: React.FC = () => {
         />
       )}
 
+      {/* Students see "Coming soon" while no session is open (and a blank page until we know) */}
+      {(!releasesReady || nothingOpen) && !showTeacher && (releasesReady ? <ComingSoon /> : <div className="fixed inset-0 z-[70] bg-[#FAF9F6]" />)}
+
       {/* Teacher sign-in (only with ?teacher and no verified session) */}
       {IS_TEACHER && !teacherAuthed && (
         <ErrorGuard>
@@ -956,7 +1006,7 @@ export const SlideDeck: React.FC = () => {
       <SlideNavigator
         slides={activeSlides}
         actsMetadata={activeActs}
-        sessionTitle={activeSessionId === 2 ? 'Session 2 Master Slide Index' : 'Session 1 Master Slide Index'}
+        sessionTitle={`Session ${activeSessionId} Master Slide Index`}
         currentIndex={currentIndex}
         isOpen={isNavigatorOpen}
         onClose={() => setIsNavigatorOpen(false)}
@@ -977,6 +1027,8 @@ export const SlideDeck: React.FC = () => {
         onClose={() => setIsCurriculumOpen(false)}
         currentSessionId={activeSessionId}
         onSelectSession={switchSession}
+        canOpen={canOpen}
+        teacher={showTeacher}
       />
     </div>
   );

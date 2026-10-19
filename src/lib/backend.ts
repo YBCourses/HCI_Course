@@ -282,3 +282,25 @@ export const bestStatus = (rows: { status: ProgressStatus }[]): ProgressStatus |
   if (!rows.length) return null;
   return rows.reduce((a, b) => (STATUS_ORDER.indexOf(b.status) > STATUS_ORDER.indexOf(a.status) ? b : a)).status;
 };
+
+/* ------------------------------------------------------------ session release */
+
+/** Which sessions students may open. Null when the backend is not configured or unreachable. */
+export const fetchReleases = async (): Promise<Record<number, boolean> | null> => {
+  if (!isBackendConfigured()) return null;
+  try {
+    const rows: { session: number; released: boolean }[] = await rest('session_release?select=session,released');
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    return Object.fromEntries(rows.map((r) => [r.session, !!r.released]));
+  } catch {
+    return null;
+  }
+};
+
+export const saveRelease = (session: number, released: boolean): Promise<void> =>
+  rest('session_release?on_conflict=session', {
+    method: 'POST',
+    admin: true,
+    headers: { Prefer: 'resolution=merge-duplicates' },
+    body: json({ session, released, updated_at: new Date().toISOString() }),
+  });

@@ -36,13 +36,13 @@ export const COURSE_SESSIONS: SessionInfo[] = [
   {
     id: 3,
     sessionNumber: 'SESSION 03',
-    title: 'User Research & Contextual Inquiry',
-    subtitle: 'Ethnography, Field Observations, Think-Aloud Protocols & Interviews',
+    title: 'The User',
+    subtitle: 'Know Your User: From an Idea to a User Study',
     durationHours: 4,
     status: 'upcoming',
-    description: 'Master-apprentice model, observation techniques, qualitative interviewing, affinity diagramming, and thematic synthesis.',
-    actCount: 5,
-    slideCount: 42,
+    description: 'What a user is, turning an idea into research questions, finding and recruiting users, observation, think-aloud, interviews, bias, affinity diagrams, insights and an audience profile that feeds Session 4, with a studio to plan your real user study.',
+    actCount: 6,
+    slideCount: 69,
   },
   {
     id: 4,
