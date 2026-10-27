@@ -47,13 +47,13 @@ export const COURSE_SESSIONS: SessionInfo[] = [
   {
     id: 4,
     sessionNumber: 'SESSION 04',
-    title: 'Requirements Engineering & Personas',
-    subtitle: 'From Qualitative Insight to Actionable Design Requirements',
+    title: 'The Need',
+    subtitle: 'Requirements, Personas, Scenarios & Journeys',
     durationHours: 4,
     status: 'upcoming',
-    description: 'Data-driven personas, empathy maps, scenario generation, user journey mapping, and value-proposition definition.',
-    actCount: 5,
-    slideCount: 38,
+    description: 'A 30-minute simulation bridge (the Fresh Batch bakery case), then evidence-based personas, goals and constraints, empathy maps, tasks, scenarios, journey maps, good requirements, priorities, success measures and a value proposition, with a studio that builds the Requirements Pack.',
+    actCount: 6,
+    slideCount: 62,
   },
   {
     id: 5,

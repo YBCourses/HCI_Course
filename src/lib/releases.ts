@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { fetchReleases } from './backend';
 
 /** Sessions that have slides in the app. */
-export const BUILT_SESSIONS = [1, 2, 3];
+export const BUILT_SESSIONS = [1, 2, 3, 4];
 /** Used until the database answers (or when it cannot): the two finished sessions stay open. */
 const DEFAULT_RELEASED: Record<number, boolean> = { 1: true, 2: true };
 
