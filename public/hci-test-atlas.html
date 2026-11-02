@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>HCI Practical Test: From People to Requirements</title>
+<style>
+  :root{
+    --accent:#E5391C; --accent-d:#C92B10; --ink:#222222; --ink2:#525254; --ink3:#6E6D70;
+    --line:#E8E2D9; --bg:#FAF9F6; --card:#ffffff; --tint:#FDF5F3; --tint-line:#FAD6CF;
+    --good:#0f7a4f; --warn:#b45309;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --ink:#f2efe9; --ink2:#c9c5bd; --ink3:#a29f98; --line:#3a3733; --bg:#1b1a18; --card:#24231f; --tint:#2c211e; --tint-line:#5a2e25; }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:0 16px 80px}
+  header.top{background:var(--card);border-bottom:1px solid var(--line)}
+  header.top .wrap{display:flex;align-items:center;gap:14px;padding:14px 16px}
+  .logo{display:flex;gap:4px}.logo span{background:var(--accent);color:#fff;font-weight:800;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .top small{color:var(--accent);font:700 12px/1 ui-monospace,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase}
+  h1{font:600 34px/1.15 Georgia,"Times New Roman",serif;margin:28px 0 6px}
+  h2{font:600 26px/1.2 Georgia,serif;margin:0 0 4px}
+  h3{font-size:18px;margin:18px 0 6px}
+  .sub{color:var(--ink2);margin:0 0 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 22px;margin:18px 0}
+  .card.part{border-left:6px solid var(--accent)}
+  .pill{display:inline-block;background:var(--tint);border:1px solid var(--tint-line);color:var(--accent);border-radius:999px;padding:2px 12px;font:700 12px/1.6 ui-monospace,Consolas,monospace;letter-spacing:.06em;text-transform:uppercase}
+  .row{display:flex;gap:14px;flex-wrap:wrap}.row>*{flex:1 1 200px}
+  label{display:block;font-weight:600;margin:10px 0 4px}
+  input[type=text],input[type=number],select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  textarea{min-height:76px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+  table{width:100%;border-collapse:collapse;margin:8px 0}
+  th,td{border-bottom:1px solid var(--line);padding:8px 6px;vertical-align:top;text-align:left}
+  th{font:700 12px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+  .note{background:var(--tint);border:1px solid var(--tint-line);border-radius:12px;padding:10px 14px;margin:10px 0;color:var(--ink2)}
+  .case td:first-child,.notes td:first-child{white-space:nowrap;font:700 14px ui-monospace,Consolas,monospace;color:var(--accent)}
+  .small{font-size:14px;color:var(--ink3)}
+  .hint{font-size:14px;color:var(--ink3);margin:2px 0 6px}
+  .timer{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+  .timer .wrap{display:flex;align-items:center;gap:12px;padding:8px 16px;flex-wrap:wrap}
+  .timer b{font:700 22px ui-monospace,Consolas,monospace}
+  .timer .bar{flex:1;height:8px;background:var(--line);border-radius:6px;overflow:hidden;min-width:120px}
+  .timer .bar i{display:block;height:100%;width:0;background:var(--accent)}
+  button{font:inherit;font-weight:700;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 16px;cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:var(--accent-d)}
+  .budget{display:flex;align-items:center;gap:12px;margin:8px 0}
+  .budget .meter{flex:1;height:14px;border-radius:8px;background:var(--line);overflow:hidden}
+  .budget .meter i{display:block;height:100%;background:var(--good);width:0}
+  .budget.over .meter i{background:var(--accent)}
+  .budget b{font:700 15px ui-monospace,Consolas,monospace;white-space:nowrap}
+  .checks li{margin:4px 0}.ok{color:var(--good);font-weight:700}.todo{color:var(--warn);font-weight:700}
+  .done-box{display:none}
+  .done-box.show{display:block}
+  code.sig{display:block;word-break:break-all;background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:10px;font-size:13px}
+  @media (max-width:640px){ h1{font-size:28px} th:nth-child(n+4){display:none} }
+  @media print{
+    .timer,.noprint,button{display:none!important}
+    body{background:#fff;color:#000;font-size:12px}.card{break-inside:avoid;border-color:#bbb}
+    textarea,input,select{border:1px solid #999;background:#fff;color:#000}
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="logo" aria-hidden="true"><span>U</span><span>M</span><span>6</span><span>P</span></div>
+  <div><small>HCI Master Course · Practical test</small></div>
+</div></header>
+
+<div class="timer noprint"><div class="wrap">
+  <button class="primary" id="startBtn" type="button">Start my 60 minutes</button>
+  <b id="clock">60:00</b>
+  <div class="bar"><i id="barFill"></i></div>
+  <span class="small" id="timerNote">The timer is only a guide: your answers save automatically in this browser.</span>
+</div></div>
+
+<main class="wrap">
+  <h1>From People to Requirements</h1>
+  <p class="sub">One case, five parts, 60 minutes. You work alone. Everything you need is on this page: do not look for other information, and do not invent facts that the case does not give. Answer in short, clear sentences.</p>
+
+  <section class="card">
+    <h2>Who are you?</h2>
+    <div class="row">
+      <div><label for="f_name">Full name</label><input type="text" id="f_name" name="name" autocomplete="name"></div>
+      <div><label for="f_id">Student ID or e-mail</label><input type="text" id="f_id" name="student_id"></div>
+      <div><label for="f_project">Your course project (number or name)</label><input type="text" id="f_project" name="project"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="pill">The case</span>
+    <h2>Atlas Packing House</h2>
+    <p class="sub">Read it once, calmly (3 minutes). You will come back to it all along.</p>
+    <p><b>The business.</b> Atlas Packing House washes, sorts and packs oranges for supermarkets and exporters. Day shift: 06:00 to 14:00, about 40 people, four packing lines. Every truck must leave by 14:00. Boxes are packed per client order (client, size, number of boxes).</p>
+    <p><b>The idea (nothing is built).</b> A shared board at each packing line that tells the team which client order to pack next, which size, how many boxes, and that makes last-minute changes reach everyone. Not a screen design yet: only an idea.</p>
+    <p><b>The people.</b></p>
+    <ul>
+      <li><b>Fatima</b>, 45, line supervisor. Decides which order each line packs. Reads Arabic and French.</li>
+      <li><b>Rachid</b>, 31, packer. Wet, gloved hands. Works 3 to 5 metres from where information could be shown. Reads French less easily; numbers are fine.</li>
+      <li><b>Samir</b>, 38, forklift driver. Moves pallets to the trucks.</li>
+      <li><b>Lahcen</b>, 50, quality controller. Rejects fruit that does not meet the standard.</li>
+      <li><b>Nora</b>, 36, order planner, in the office. Takes client changes by phone and e-mail until 08:30.</li>
+      <li><i>Anti-persona:</i> the owner's cousin, who wants charts and a dashboard. He never works in the hall.</li>
+    </ul>
+    <p><b>The place and the limits.</b> Cold, wet hall (about 12 °C). Noise around 85 dB (machines). Wet or gloved hands; hygiene rules (hairnets, no dirty hands on shared surfaces). Weak Wi-Fi near the washing area. Staff read Arabic and French, and some read little. Budget for the whole tool: <b>3,000 euros</b>. It must be live in <b>2 months</b>.</p>
+    <p><b>How it works today.</b> Fatima writes the day plan on paper sheets taped to each line. Changes are shouted across the hall. Repacked boxes: about <b>5%</b> of boxes. Late trucks: about <b>4 per month</b>. Targets: repack at most <b>2%</b>, late trucks at most <b>1 per month</b>.</p>
+
+    <h3>What the team observed (2 mornings of shadowing, 12 notes)</h3>
+    <table class="notes" aria-label="Observation notes">
+      <tr><th>Note</th><th>What was seen or said</th></tr>
+      <tr><td>N1</td><td>06:20 Fatima writes the day plan on paper sheets, one per line; it takes 15 minutes.</td></tr>
+      <tr><td>N2</td><td>07:05 Rachid reads the sheet from 4 metres, cannot read the small numbers, and asks a neighbour.</td></tr>
+      <tr><td>N3</td><td>08:10 Nora phones: the client wants 200 boxes changed from size 5 to size 6. Fatima shouts it to line 2 only.</td></tr>
+      <tr><td>N4</td><td>08:25 Line 3 keeps packing size 5 for 20 more minutes; 12 boxes are repacked.</td></tr>
+      <tr><td>N5</td><td>09:00 Samir waits 7 minutes with the forklift: nobody knows which pallet is ready.</td></tr>
+      <tr><td>N6</td><td>09:40 A wet paper sheet tears; the quantity for one client is lost.</td></tr>
+      <tr><td>N7</td><td>10:15 Lahcen rejects a batch, but the packers keep packing: the news did not reach the line.</td></tr>
+      <tr><td>N8</td><td>10:50 Rachid: “I only need to see how many boxes, which size, which client. Nothing else.”</td></tr>
+      <tr><td>N9</td><td>11:30 Samir asks three times “which pallet first?” over the noise; nobody hears him.</td></tr>
+      <tr><td>N10</td><td>12:15 Fatima: “If a change reaches everyone at once, I save my morning.”</td></tr>
+      <tr><td>N11</td><td>12:40 Rachid takes off a wet glove to use his phone and drops it in the water.</td></tr>
+      <tr><td>N12</td><td>13:30 Two packers read the labels differently: “Size 5” on one sheet, “Calibre 5” on another.</td></tr>
+    </table>
+  </section>
+
+  <!-- PART 1 -->
+  <section class="card part" id="p1">
+    <span class="pill">Part 1 · about 8 min · 12 points</span>
+    <h2>The human in the hall</h2>
+    <p class="sub">For each fact about the hall, choose the human limit it relates to, then write the design consequence in one sentence (what must the idea do, or avoid?).</p>
+    <table id="t1"><tr><th style="width:34%">Fact</th><th style="width:28%">Human limit</th><th>Consequence for the idea</th></tr></table>
+  </section>
+
+  <!-- PART 2 -->
+  <section class="card part" id="p2">
+    <span class="pill">Part 2 · about 12 min · 20 points</span>
+    <h2>From the idea to a study plan</h2>
+    <p class="sub">Imagine you must plan the user study <u>before</u> the shadowing happened.</p>
+    <label for="a1">1. Write three assumptions hidden in the idea (about people, task, place or reason).</label>
+    <textarea id="a1" name="p2_assumptions" placeholder="1) … 2) … 3) …"></textarea>
+    <label for="a2">2. Which assumption is the riskiest, and why? (It matters a lot and you are not sure.)</label>
+    <textarea id="a2" name="p2_riskiest"></textarea>
+    <label for="a3">3. Turn it into one research question (open, about people, answerable by a study).</label>
+    <textarea id="a3" name="p2_question"></textarea>
+    <div class="row">
+      <div><label for="a4">4. Main method</label>
+        <select id="a4" name="p2_method"><option value="">Choose…</option><option>Observation in their place</option><option>Interviews</option><option>Think aloud</option><option>Survey</option><option>Usage data</option></select></div>
+      <div><label for="a5">Why this method?</label><input type="text" id="a5" name="p2_method_why"></div>
+    </div>
+    <label for="a6">5. Who would you recruit? Name 3 kinds of people, one of them an “extreme” user, and give one screening question.</label>
+    <textarea id="a6" name="p2_recruit"></textarea>
+    <label for="a7">6. Write one sentence of consent you would say before starting (permission, free to stop, anonymous notes).</label>
+    <textarea id="a7" name="p2_consent"></textarea>
+  </section>
+
+  <!-- PART 3 -->
+  <section class="card part" id="p3">
+    <span class="pill">Part 3 · about 12 min · 20 points</span>
+    <h2>Make sense of the notes</h2>
+    <p class="sub">The study ran: use the 12 notes above.</p>
+    <h3>3.1 Group the notes (3 to 5 groups)</h3>
+    <div class="row" id="groupNames"></div>
+    <table id="t3"><tr><th style="width:80px">Note</th><th>Group</th></tr></table>
+    <h3>3.2 Write three insights</h3>
+    <p class="hint">Format: “[Who] need(s) [what] because [why].” Cite the notes that support each one.</p>
+    <div id="ins"></div>
+    <h3>3.3 The audience profile (a group, not one person)</h3>
+    <div class="row">
+      <div><label for="pr1">Who they are</label><textarea id="pr1" name="p3_profile_who"></textarea></div>
+      <div><label for="pr2">What they try to do</label><textarea id="pr2" name="p3_profile_do"></textarea></div>
+    </div>
+    <div class="row">
+      <div><label for="pr3">Where and when</label><textarea id="pr3" name="p3_profile_where"></textarea></div>
+      <div><label for="pr4">What they need</label><textarea id="pr4" name="p3_profile_need"></textarea></div>
+      <div><label for="pr5">What hurts</label><textarea id="pr5" name="p3_profile_hurts"></textarea></div>
+    </div>
+  </section>
+
+  <!-- PART 4 -->
+  <section class="card part" id="p4">
+    <span class="pill">Part 4 · about 13 min · 20 points</span>
+    <h2>Persona, needs and journey</h2>
+    <h3>4.1 One persona from the evidence</h3>
+    <p class="hint">Choose Fatima or Rachid. Every line must cite at least one note (for example N2). If there is no note, write “guess” or leave it out.</p>
+    <div class="row">
+      <div><label for="ps0">Persona</label><select id="ps0" name="p4_persona"><option value="">Choose…</option><option>Fatima</option><option>Rachid</option></select></div>
+      <div><label for="ps6">Quote (exact words from the notes) and note</label><input type="text" id="ps6" name="p4_quote"></div>
+    </div>
+    <div class="row">
+      <div><label for="ps1">Goal</label><textarea id="ps1" name="p4_goal"></textarea></div>
+      <div><label for="ps2">Context</label><textarea id="ps2" name="p4_context"></textarea></div>
+    </div>
+    <div class="row">
+      <div><label for="ps3">Behaviour</label><textarea id="ps3" name="p4_behaviour"></textarea></div>
+      <div><label for="ps4">Pain points</label><textarea id="ps4" name="p4_pains"></textarea></div>
+    </div>
+    <h3>4.2 Need, goal, constraint or wish?</h3>
+    <table id="t4"><tr><th>Statement</th><th style="width:170px">Kind</th></tr></table>
+    <h3>4.3 The journey of your persona (5 steps)</h3>
+    <p class="hint">Feeling: 1 = very stressed, 5 = calm. One pain and one opportunity per step.</p>
+    <table id="t43"><tr><th style="width:24%">Step</th><th style="width:90px">Feeling</th><th>Pain</th><th>Opportunity</th></tr></table>
+  </section>
+
+  <!-- PART 5 -->
+  <section class="card part" id="p5">
+    <span class="pill">Part 5 · about 15 min · 28 points</span>
+    <h2>Requirements</h2>
+    <h3>5.1 Solution or need?</h3>
+    <p class="hint">Each statement below is a solution. Rewrite it as the need underneath (what the person must be able to do or know), without naming a technology.</p>
+    <div id="rw"></div>
+    <h3>5.2 Write 5 requirements</h3>
+    <p class="hint">Each: one clear sentence about what is needed (not how to build it), a type, a success measure with a number, and the notes that support it.</p>
+    <div id="rq"></div>
+    <h3>5.3 Spend the budget</h3>
+    <p class="hint">Your tool costs at most 3,000 euros. Choose Must, Should, Could or Won't for each candidate requirement. The bar counts Must + Should.</p>
+    <table id="t53"><tr><th>Candidate requirement</th><th style="width:90px">Cost</th><th style="width:140px">Priority</th></tr></table>
+    <div class="budget" id="budget"><b id="bTxt">0 / 3,000 €</b><div class="meter"><i id="bFill"></i></div></div>
+    <label for="pw">5.4 Why did you keep out your biggest “Won't”? (one sentence)</label>
+    <textarea id="pw" name="p5_wont_why"></textarea>
+    <h3>5.5 Value sentence</h3>
+    <p class="hint">“For [who] who [need], [name] is [what] that [benefit], unlike [today].”</p>
+    <textarea id="vs" name="p5_value"></textarea>
+  </section>
+
+  <section class="card noprint">
+    <h2>Finish</h2>
+    <p class="sub">Check your answers, then download your answer file and send it as your teacher asks. You may also print this page to PDF.</p>
+    <ul class="checks" id="checks"></ul>
+    <p><button class="primary" id="exportBtn" type="button">Download my answers (.json)</button>
+       <button id="printBtn" type="button">Print / save as PDF</button></p>
+    <div class="done-box" id="done"><p class="ok">Answer file created. Keep this code: it proves which version you submitted.</p><code class="sig" id="sig"></code></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  var KEY='hci-test-atlas-v1';
+  var state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var save=function(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} };
+  var $=function(s,r){return (r||document).querySelector(s)};
+  var el=function(t,a,h){var e=document.createElement(t);for(var k in (a||{}))e.setAttribute(k,a[k]);if(h!=null)e.innerHTML=h;return e;};
+  var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+
+  // ---- data ----
+  var FACTS=[
+    'The board will be 4 metres from the packer.',
+    'Rachid works with wet, gloved hands.',
+    'The day plan has 12 orders in a long list.',
+    'The machines run at about 85 dB.',
+    'Two packers read “Size 5” and “Calibre 5” differently.'];
+  var LIMITS=['Reading distance and legibility','Pointing with big, close targets (Fitts)','Working memory (about 4 chunks)','Noise and the senses','Mental model and language','Reaction time'];
+  var NOTES=['N1','N2','N3','N4','N5','N6','N7','N8','N9','N10','N11','N12'];
+  var STATEMENTS=[
+    'Late trucks fall from 4 a month to at most 1.',
+    'Packers must read the next order from 4 metres.',
+    'The budget for the whole tool is 3,000 euros.',
+    'A live map of the farms on the wall.',
+    'Hands are wet or gloved and must not touch shared surfaces.',
+    'Samir must know which pallet is ready without shouting.',
+    'Repacked boxes fall from 5% to 2%.',
+    'A weather forecast widget.'];
+  var SOLUTIONS=['“A touchscreen at each packing line.”','“A mobile app for every packer.”','“Voice commands for the board.”'];
+  var CANDS=[
+    ['Each line shows its next order (client, size, boxes), readable from 4 metres',600],
+    ['A change reaches all lines within 1 minute',700],
+    ['Nothing important is lost when paper gets wet or torn',300],
+    ['The forklift driver sees which pallet is ready',400],
+    ['It can be used with wet or gloved hands, without touching',300],
+    ['Numbers and icons, with the same words in Arabic and French everywhere',250],
+    ['It keeps working when the Wi-Fi is weak near the washing area',500],
+    ['A daily dashboard with charts for the owner',900]];
+  var TYPES=['What it must do','How well (quality)','For whom (accessibility, language)','Under which limits (constraint)'];
+  var BUDGET=3000;
+
+  // ---- build tables ----
+  var t1=$('#t1');
+  FACTS.forEach(function(f,i){
+    var tr=el('tr'); tr.appendChild(el('td',{},esc(f)));
+    var sel='<select name="p1_limit_'+i+'"><option value="">Choose…</option>'+LIMITS.map(function(l){return '<option>'+esc(l)+'</option>'}).join('')+'</select>';
+    tr.appendChild(el('td',{},sel));
+    tr.appendChild(el('td',{},'<textarea name="p1_cons_'+i+'" style="min-height:56px"></textarea>'));
+    t1.appendChild(tr);
+  });
+  var gn=$('#groupNames');
+  for(var g=1;g<=5;g++){ gn.appendChild(el('div',{},'<label for="gn'+g+'">Group '+g+(g>3?' (optional)':'')+'</label><input type="text" id="gn'+g+'" name="p3_group_'+g+'" placeholder="Short name">')); }
+  var t3=$('#t3');
+  NOTES.forEach(function(n){ var tr=el('tr'); tr.appendChild(el('td',{},n)); tr.appendChild(el('td',{},'<select name="p3_assign_'+n+'" data-group="1"></select>')); t3.appendChild(tr); });
+  var ins=$('#ins');
+  for(var i=1;i<=3;i++){ ins.appendChild(el('div',{},'<label for="in'+i+'">Insight '+i+'</label><textarea id="in'+i+'" name="p3_insight_'+i+'" style="min-height:60px"></textarea><div class="row"><div><input type="text" name="p3_insight_ev_'+i+'" placeholder="Notes that support it (for example N3, N4)"></div></div>')); }
+  var t4=$('#t4');
+  STATEMENTS.forEach(function(s,i){ var tr=el('tr'); tr.appendChild(el('td',{},esc(s))); tr.appendChild(el('td',{},'<select name="p4_kind_'+i+'"><option value="">Choose…</option><option>Need</option><option>Goal</option><option>Constraint</option><option>Wish</option></select>')); t4.appendChild(tr); });
+  var t43=$('#t43');
+  for(i=1;i<=5;i++){ var tr2=el('tr'); tr2.appendChild(el('td',{},'<input type="text" name="p4_step_'+i+'" placeholder="Step '+i+'">')); tr2.appendChild(el('td',{},'<select name="p4_feel_'+i+'"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>')); tr2.appendChild(el('td',{},'<textarea name="p4_pain_'+i+'" style="min-height:56px"></textarea>')); tr2.appendChild(el('td',{},'<textarea name="p4_opp_'+i+'" style="min-height:56px"></textarea>')); t43.appendChild(tr2); }
+  var rw=$('#rw');
+  SOLUTIONS.forEach(function(s,i){ rw.appendChild(el('div',{},'<label for="rw'+i+'">'+esc(s)+' → the need is…</label><textarea id="rw'+i+'" name="p5_rewrite_'+i+'" style="min-height:60px"></textarea>')); });
+  var rq=$('#rq');
+  for(i=1;i<=5;i++){ rq.appendChild(el('div',{'class':'note'},'<b>Requirement '+i+'</b><textarea name="p5_req_'+i+'" style="min-height:56px" placeholder="The tool must let … / It must be possible to …"></textarea>'
+    +'<div class="row"><div><select name="p5_type_'+i+'"><option value="">Type…</option>'+TYPES.map(function(t){return '<option>'+esc(t)+'</option>'}).join('')+'</select></div>'
+    +'<div><input type="text" name="p5_measure_'+i+'" placeholder="Success measure with a number"></div>'
+    +'<div><input type="text" name="p5_ev_'+i+'" placeholder="Supporting notes (N…)"></div></div>')); }
+  var t53=$('#t53');
+  CANDS.forEach(function(c,i){ var tr3=el('tr'); tr3.appendChild(el('td',{},esc(c[0]))); tr3.appendChild(el('td',{},c[1]+' €')); tr3.appendChild(el('td',{},'<select name="p5_prio_'+i+'" data-cost="'+c[1]+'"><option value="">Choose…</option><option>Must</option><option>Should</option><option>Could</option><option>Won\'t</option></select>')); t53.appendChild(tr3); });
+
+  // ---- inputs: restore, save, group options ----
+  var fields=function(){ return Array.prototype.slice.call(document.querySelectorAll('input[name],select[name],textarea[name]')); };
+  function refreshGroups(){
+    var names=[]; for(var g=1;g<=5;g++){ var v=(state['p3_group_'+g]||'').trim(); if(v) names.push(v); }
+    document.querySelectorAll('select[data-group]').forEach(function(s){
+      var cur=state[s.name]||''; s.innerHTML='<option value="">Choose a group…</option>'+names.map(function(n){return '<option>'+esc(n)+'</option>'}).join('');
+      if(names.indexOf(cur)>=0) s.value=cur; else if(cur) { s.insertAdjacentHTML('beforeend','<option>'+esc(cur)+'</option>'); s.value=cur; }
+    });
+  }
+  function refreshBudget(){
+    var total=0; document.querySelectorAll('select[data-cost]').forEach(function(s){ if(s.value==='Must'||s.value==='Should') total+=Number(s.dataset.cost); });
+    var pct=Math.min(100,Math.round(total/BUDGET*100));
+    $('#bFill').style.width=pct+'%'; $('#bTxt').textContent=total.toLocaleString('en-US')+' / '+BUDGET.toLocaleString('en-US')+' €';
+    $('#budget').className='budget'+(total>BUDGET?' over':'');
+  }
+  fields().forEach(function(f){ if(state[f.name]!=null && !f.hasAttribute('data-group')) f.value=state[f.name]; });
+  refreshGroups(); refreshBudget();
+  fields().forEach(function(f){
+    var h=function(){ state[f.name]=f.value; save(); if(/^p3_group_/.test(f.name)) refreshGroups(); if(/^p5_prio_/.test(f.name)) refreshBudget(); renderChecks(); };
+    f.addEventListener('input',h); f.addEventListener('change',h);
+  });
+
+  // ---- timer (a guide only) ----
+  var total=60*60, t0=Number(state.__t0||0), tick;
+  function draw(){
+    var left=total; if(t0) left=Math.max(0,total-Math.floor((Date.now()-t0)/1000));
+    var m=Math.floor(left/60), s=left%60; $('#clock').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+    $('#barFill').style.width=(t0?(100-left/total*100):0)+'%';
+    if(left===0) $('#timerNote').textContent='Time is up. Finish your sentence, then download your answers.';
+  }
+  function start(){ if(!t0){ t0=Date.now(); state.__t0=t0; save(); } $('#startBtn').style.display='none'; clearInterval(tick); tick=setInterval(draw,1000); draw(); }
+  $('#startBtn').addEventListener('click',start);
+  if(t0){ $('#startBtn').style.display='none'; tick=setInterval(draw,1000); }
+  draw();
+
+  // ---- completeness checks (no answers are revealed) ----
+  function filled(prefix,n){ var c=0; fields().forEach(function(f){ if(f.name.indexOf(prefix)===0 && String(f.value).trim()) c++; }); return c; }
+  function renderChecks(){
+    var items=[
+      ['Who you are',['name','student_id'].every(function(n){return String(state[n]||'').trim()})],
+      ['Part 1: all 5 facts answered',filled('p1_limit_')===5&&filled('p1_cons_')===5],
+      ['Part 2: plan complete',['p2_assumptions','p2_riskiest','p2_question','p2_method','p2_recruit','p2_consent'].every(function(n){return String(state[n]||'').trim()})],
+      ['Part 3: every note grouped, 3 insights and a profile',filled('p3_assign_')===12&&filled('p3_insight_')>=3&&filled('p3_profile_')===5],
+      ['Part 4: persona, 8 statements sorted, journey with 5 steps',String(state.p4_persona||'')&&filled('p4_kind_')===8&&filled('p4_step_')===5],
+      ['Part 5: 3 rewrites, 5 requirements, budget choices, value sentence',filled('p5_rewrite_')===3&&filled('p5_req_')===5&&filled('p5_prio_')===8&&String(state.p5_value||'').trim()]
+    ];
+    $('#checks').innerHTML=items.map(function(it){return '<li><span class="'+(it[1]?'ok':'todo')+'">'+(it[1]?'✓':'…')+'</span> '+esc(it[0])+'</li>'}).join('');
+  }
+  renderChecks();
+
+  // ---- export ----
+  function hash(str){ var h=2166136261; for(var i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return ('00000000'+(h>>>0).toString(16)).slice(-8); }
+  $('#exportBtn').addEventListener('click',function(){
+    var out={test:'atlas-packing-house-v1',exported_at:new Date().toISOString(),started_at:t0?new Date(t0).toISOString():null,answers:{}};
+    fields().forEach(function(f){ out.answers[f.name]=f.value; });
+    var body=JSON.stringify(out,null,2); var sig=hash(body)+'-'+hash(body.split('').reverse().join(''));
+    out.signature=sig; body=JSON.stringify(out,null,2);
+    var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([body],{type:'application/json'}));
+    var nm=(String(state.name||'student')).replace(/[^\w\-]+/g,'_'); a.download=nm+'-hci-test.json'; document.body.appendChild(a); a.click(); a.remove();
+    $('#sig').textContent=sig; $('#done').className='done-box show';
+  });
+  $('#printBtn').addEventListener('click',function(){ window.print(); });
+})();
+</script>
+</body>
+</html>
