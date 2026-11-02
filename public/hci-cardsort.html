@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Card Sort: The Community Library</title>
+<style>
+  :root { --red:#E5391C; --ink:#2D2D2E; --mute:#6E6D70; --line:#E8E2D9; --bg:#FAF9F6; --card:#fff; --ok:#0f8a5f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:20px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { display:flex; align-items:center; gap:16px; padding:14px 24px; border-bottom:1px solid var(--line); background:#fff; position:sticky; top:0; z-index:5; flex-wrap:wrap; }
+  .logo { display:flex; gap:4px; } .logo b { background:var(--red); color:#fff; border-radius:5px; padding:2px 8px; font-size:18px; }
+  header h1 { font-size:22px; margin:0; font-weight:700; } header .sp { flex:1; }
+  .chip { font-size:18px; color:var(--mute); }
+  main { max-width:1500px; margin:0 auto; padding:24px; }
+  h2 { font-size:30px; margin:0 0 8px; }
+  p.lead { color:var(--mute); margin:0 0 18px; max-width:900px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; margin-bottom:20px; }
+  input[type=text] { font:inherit; padding:14px 16px; border:2px solid var(--line); border-radius:12px; width:100%; max-width:460px; }
+  button { font:inherit; font-weight:700; cursor:pointer; border-radius:12px; border:2px solid var(--line); background:#fff; padding:12px 20px; min-height:52px; color:var(--ink); }
+  button.primary { background:var(--red); border-color:var(--red); color:#fff; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .note { font-size:18px; color:var(--mute); }
+  .err { color:#b42318; font-weight:600; }
+  /* sorting */
+  .pool { display:flex; flex-wrap:wrap; gap:10px; min-height:70px; }
+  .card { background:#fff; border:2px solid var(--line); border-radius:12px; padding:10px 14px; font-size:20px; font-weight:600; cursor:pointer; text-align:left; min-height:52px; }
+  .card.sel { border-color:var(--red); box-shadow:0 0 0 3px rgba(229,57,28,.2); }
+  .groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+  .group { border:2px dashed var(--line); border-radius:16px; padding:12px; min-height:190px; background:#fff; cursor:pointer; }
+  .group.target { border-color:var(--red); background:#fff6f4; }
+  .group h3 { margin:0 0 4px; font-size:22px; display:flex; justify-content:space-between; }
+  .group h3 span { color:var(--mute); font-weight:600; font-size:20px; }
+  .group .card { display:block; width:100%; margin-top:8px; font-size:19px; }
+  .bar { height:8px; border-radius:99px; background:var(--line); overflow:hidden; margin:6px 0 0; } .bar i { display:block; height:100%; background:var(--red); transition:width .2s; }
+  /* results */
+  .res { display:grid; grid-template-columns:minmax(230px,1.1fr) 3fr 110px; gap:14px; align-items:center; padding:12px 0; border-top:1px solid var(--line); }
+  .res.head { border-top:0; font-weight:700; color:var(--mute); font-size:18px; }
+  .stack { display:flex; height:30px; border-radius:8px; overflow:hidden; background:var(--line); }
+  .stack i { display:block; height:100%; }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; margin:10px 0 4px; font-size:18px; } .legend span { display:flex; gap:8px; align-items:center; } .legend u { width:18px; height:18px; border-radius:4px; display:inline-block; }
+  .tag { display:inline-block; padding:2px 10px; border-radius:99px; font-size:16px; font-weight:700; margin-left:8px; }
+  .tag.you { background:#e8f5ee; color:var(--ok); } .tag.split { background:#fff2e5; color:#b45309; }
+  .agree { font-weight:800; font-size:22px; text-align:right; }
+  .kpis { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px; } .kpi { background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 18px; } .kpi b { font-size:30px; display:block; }
+  table { border-collapse:collapse; width:100%; } td,th { text-align:left; padding:8px 10px; border-top:1px solid var(--line); font-size:18px; }
+  @media (max-width:760px){ .res{ grid-template-columns:1fr; gap:6px; } .agree{ text-align:left; } main{padding:14px;} }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><b>U</b><b>M</b><b>6</b><b>P</b></div>
+  <h1>Card Sort · The Community Library</h1>
+  <div class="sp"></div>
+  <div class="chip" id="who"></div>
+</header>
+<main id="app"></main>
+
+<script>
+/* ---------------------------------------------------------------- settings */
+const URL_ = 'https://kkxntyuihkpiswyuonam.supabase.co';
+const KEY = 'sb_publishable_ccmi4x9glRN99JLKooSVTQ_B--f37nq';
+const SET = 'library';
+const TEACHER_SESSION_KEY = 'hci.teacher.session'; // same site as the course app: signing in there signs you in here
+const GROUPS = [
+  { id: 'g1', name: 'Borrowing', color: '#3b82f6' },
+  { id: 'g2', name: 'Learning & Events', color: '#8b5cf6' },
+  { id: 'g3', name: 'Rooms & Equipment', color: '#10b981' },
+  { id: 'g4', name: 'My Account', color: '#f59e0b' },
+  { id: 'g5', name: 'Help & About', color: '#E5391C' },
+];
+/* 30 cards. Several sit between two groups on purpose: that is what the class results will show. */
+const CARDS = [
+  ['c01', 'Renew a loan online'], ['c02', 'Reserve a book that is out'], ['c03', 'Late fees: how they work'],
+  ['c04', 'Borrow an e-reader'], ['c05', 'Request a book from another library'], ['c06', 'Return box: opening hours'],
+  ['c07', "Kids' story hour"], ['c08', 'CV writing workshop'], ['c09', 'Coding club for teens'],
+  ['c10', 'Language conversation café'], ['c11', 'Author meet-and-greet'], ['c12', 'Homework help'],
+  ['c13', 'Book a study room'], ['c14', 'Print and scan'], ['c15', 'Quiet floor: the rules'],
+  ['c16', 'Rent the event hall'], ['c17', 'Free Wi-Fi and computers'], ['c18', 'Makerspace 3D printer'],
+  ['c19', 'Sign up for a card'], ['c20', 'Replace a lost card'], ['c21', 'Family membership'],
+  ['c22', 'Change my e-mail address'], ['c23', 'Who can see my reading history'], ['c24', 'Pay a fine online'],
+  ['c25', 'Ask a librarian'], ['c26', 'Accessibility services'], ['c27', 'Donate books'],
+  ['c28', 'Opening hours and map'], ['c29', 'Suggest a book to buy'], ['c30', 'Report a damaged book'],
+].map(([id, label]) => ({ id, label }));
+const CARD = Object.fromEntries(CARDS.map((c) => [c.id, c.label]));
+const GRP = Object.fromEntries(GROUPS.map((g) => [g.id, g]));
+
+/* ---------------------------------------------------------------- helpers */
+const $app = document.getElementById('app');
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const normName = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+const ls = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: (k) => { try { localStorage.removeItem(k); } catch {} },
+};
+const teacherToken = () => {
+  try {
+    const s = JSON.parse(ls.get(TEACHER_SESSION_KEY) || 'null');
+    if (s && s.access_token && s.expires_at - 30 > Date.now() / 1000) return s.access_token;
+  } catch {}
+  return null;
+};
+async function api(path, { method = 'GET', body, token, prefer } = {}) {
+  const res = await fetch(`${URL_}/${path}`, {
+    method,
+    headers: { apikey: KEY, Authorization: `Bearer ${token || KEY}`, 'Content-Type': 'application/json', ...(prefer ? { Prefer: prefer } : {}) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  let json = null; try { json = text ? JSON.parse(text) : null; } catch {}
+  if (!res.ok) { const e = new Error((json && (json.message || json.hint)) || `Request failed (${res.status})`); e.status = res.status; e.code = json && json.code; throw e; }
+  return json;
+}
+const rpc = (fn, args, token) => api(`rest/v1/rpc/${fn}`, { method: 'POST', body: args, token });
+const getSet = async () => { const r = await api(`rest/v1/cardsort_set?id=eq.${SET}&select=*`); return r && r[0]; };
+
+/* ----------------------------------------------------------------- stats */
+function buildStats(cells, count) {
+  const per = {};
+  CARDS.forEach((c) => { per[c.id] = {}; });
+  (cells || []).forEach((x) => { if (per[x.card]) per[x.card][x.group] = x.n; });
+  const rows = CARDS.map((c) => {
+    const n = GROUPS.map((g) => per[c.id][g.id] || 0);
+    const total = n.reduce((a, b) => a + b, 0);
+    const top = Math.max(...n);
+    return { id: c.id, label: c.label, n, total, topIdx: n.indexOf(top), agree: total ? top / total : 0 };
+  });
+  const avg = rows.length ? rows.reduce((a, r) => a + r.agree, 0) / rows.length : 0;
+  return { rows, avg, count };
+}
+function resultsHtml(stats, mine, sortBy) {
+  const rows = [...stats.rows].sort((a, b) => (sortBy === 'agree-desc' ? b.agree - a.agree : sortBy === 'cards' ? 0 : a.agree - b.agree));
+  const contested = stats.rows.filter((r) => r.agree < 0.6).length;
+  return `
+  <div class="kpis">
+    <div class="kpi"><b>${stats.count}</b>students submitted</div>
+    <div class="kpi"><b>${Math.round(stats.avg * 100)}%</b>average agreement</div>
+    <div class="kpi"><b>${contested}</b>cards with no clear home (under 60%)</div>
+  </div>
+  <div class="legend">${GROUPS.map((g) => `<span><u style="background:${g.color}"></u>${esc(g.name)}</span>`).join('')}</div>
+  <p class="note">Each bar shows how the class placed the card. Agreement is the share of students who chose the most popular group.</p>
+  <div class="row" style="margin:8px 0">
+    <span class="note">Sort:</span>
+    <button data-sort="agree-asc">Most contested first</button>
+    <button data-sort="agree-desc">Most agreed first</button>
+    <button data-sort="cards">Card order</button>
+  </div>
+  <div class="res head"><div>Card</div><div>How the class placed it</div><div style="text-align:right">Agreement</div></div>
+  ${rows.map((r) => {
+    const you = mine && mine[r.id];
+    const agreeWithClass = you && GROUPS.findIndex((g) => g.id === you) === r.topIdx;
+    return `<div class="res">
+      <div><b>${esc(r.label)}</b>${r.agree < 0.6 ? '<span class="tag split">split</span>' : ''}
+        ${you ? `<div class="note">You: ${esc(GRP[you].name)} ${agreeWithClass ? '<span class="tag you">same as class</span>' : '<span class="tag split">different</span>'}</div>` : ''}</div>
+      <div><div class="stack">${r.n.map((n, i) => (n ? `<i title="${esc(GROUPS[i].name)}: ${n}" style="width:${(n / r.total) * 100}%;background:${GROUPS[i].color}"></i>` : '')).join('')}</div>
+        <div class="note">Top group: ${esc(GROUPS[r.topIdx].name)} (${r.total ? Math.round(r.agree * 100) : 0}%)</div></div>
+      <div class="agree">${Math.round(r.agree * 100)}%</div>
+    </div>`;
+  }).join('')}`;
+}
+function bindSort(root, redraw) { root.querySelectorAll('[data-sort]').forEach((b) => (b.onclick = () => redraw(b.dataset.sort))); }
+
+/* --------------------------------------------------------------- student */
+let name = ls.get('cs.name') || '';
+let placements = {};
+let selected = null;
+
+function viewName(msg) {
+  $app.innerHTML = `<div class="panel">
+    <h2>Sort 30 cards into 5 groups</h2>
+    <p class="lead">Imagine the website of a community library. Each card is something a visitor can find there. Put every card in the group where <b>you</b> would look for it first. Some cards are not obvious: pick the group you think fits best. There is no wrong answer, and the class results show how everyone thought. You can submit once.</p>
+    <p><label for="nm"><b>Your full name</b> (the same name every time you come back)</label></p>
+    <div class="row"><input id="nm" type="text" value="${esc(name)}" autocomplete="name" placeholder="First name and last name">
+    <button class="primary" id="go">Start</button></div>
+    <p class="err" id="e">${msg ? esc(msg) : ''}</p>
+  </div>`;
+  const go = async () => {
+    const v = document.getElementById('nm').value.trim();
+    if (normName(v).length < 3) { document.getElementById('e').textContent = 'Please type your first and last name.'; return; }
+    name = v; ls.set('cs.name', v);
+    await enter();
+  };
+  document.getElementById('go').onclick = go;
+}
+async function enter() {
+  document.getElementById('who').textContent = name;
+  $app.innerHTML = '<div class="panel"><p class="note">Loading…</p></div>';
+  try {
+    const key = normName(name);
+    const [set, done] = await Promise.all([getSet(), rpc('cardsort_has_submitted', { p_set: SET, p_key: key })]);
+    if (done) return viewAfter(set);
+    if (!set || !set.open) {
+      $app.innerHTML = `<div class="panel"><h2>Not open yet</h2><p class="lead">Your lecturer has not opened this card sort. Reload this page when told to.</p><button id="r">Reload</button></div>`;
+      document.getElementById('r').onclick = enter; return;
+    }
+    placements = {}; selected = null;
+    viewSort();
+  } catch (e) { viewError(e); }
+}
+function viewError(e) {
+  $app.innerHTML = `<div class="panel"><h2>Something went wrong</h2><p class="err">${esc(e.message || e)}</p><p class="note">Check your connection and try again. Your sorting is kept on this page until you reload it.</p><button id="r">Try again</button></div>`;
+  document.getElementById('r').onclick = enter;
+}
+function viewSort() {
+  const left = CARDS.filter((c) => !placements[c.id]);
+  const placed = CARDS.length - left.length;
+  $app.innerHTML = `
+  <div class="panel">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">Cards to place: ${left.length} left</h2><span class="note">${placed} of ${CARDS.length} placed</span></div>
+    <div class="bar"><i style="width:${(placed / CARDS.length) * 100}%"></i></div>
+    <p class="note">1. Tap a card. 2. Tap the group where you would look for it. Tap a placed card to take it back.</p>
+    <div class="pool" id="pool">${left.map((c) => `<button class="card ${selected === c.id ? 'sel' : ''}" data-c="${c.id}">${esc(c.label)}</button>`).join('') || '<span class="note">All cards are placed. Check your groups, then submit.</span>'}</div>
+  </div>
+  <div class="groups">${GROUPS.map((g) => {
+    const inG = CARDS.filter((c) => placements[c.id] === g.id);
+    return `<div class="group ${selected ? 'target' : ''}" data-g="${g.id}" style="border-top:6px solid ${g.color}">
+      <h3>${esc(g.name)} <span>${inG.length}</span></h3>
+      ${inG.map((c) => `<button class="card" data-back="${c.id}">${esc(c.label)}</button>`).join('')}
+    </div>`;
+  }).join('')}</div>
+  <div class="row" style="margin-top:20px"><button class="primary" id="submit" ${left.length ? 'disabled' : ''}>Submit my sort</button>
+    <span class="note">${left.length ? 'Place every card to submit.' : 'You cannot change your sort after you submit.'}</span></div>
+  <p class="err" id="e"></p>`;
+  $app.querySelectorAll('[data-c]').forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); selected = selected === b.dataset.c ? null : b.dataset.c; viewSort(); }));
+  $app.querySelectorAll('[data-back]').forEach((b) => (b.onclick = (ev) => { if (selected) return; /* a card is selected: let the tap reach the group */ ev.stopPropagation(); delete placements[b.dataset.back]; viewSort(); }));
+  $app.querySelectorAll('[data-g]').forEach((g) => (g.onclick = () => { if (!selected) return; placements[selected] = g.dataset.g; selected = null; viewSort(); }));
+  document.getElementById('submit').onclick = submit;
+}
+async function submit() {
+  const btn = document.getElementById('submit'); btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await api('rest/v1/cardsort_submission', { method: 'POST', prefer: 'return=minimal', body: { set_id: SET, student_key: normName(name), student_name: name, placements } });
+    ls.set('cs.mine', JSON.stringify(placements));
+    viewAfter(await getSet());
+  } catch (e) {
+    if (e.status === 409 || e.code === '23505') return viewAfter(await getSet());
+    btn.disabled = false; btn.textContent = 'Submit my sort';
+    document.getElementById('e').textContent = (e.status === 401 || e.status === 403) ? 'Submissions are closed right now.' : 'Not sent: ' + (e.message || e) + ' Try again.';
+  }
+}
+let sortBy = 'agree-asc';
+async function viewAfter(set) {
+  let mine = null;
+  try { mine = await rpc('cardsort_my_submission', { p_set: SET, p_key: normName(name) }); } catch {}
+  if (!mine) { try { mine = JSON.parse(ls.get('cs.mine') || 'null'); } catch {} }
+  const stats = await rpc('cardsort_stats', { p_set: SET });
+  if (stats.locked) {
+    $app.innerHTML = `<div class="panel"><h2>Submitted. Thank you, ${esc(name)}.</h2>
+      <p class="lead">Your sort is saved. ${stats.count} student${stats.count === 1 ? ' has' : 's have'} submitted so far. Think about which cards were hard to place: the class results will show where others hesitated too.</p>
+      <button id="r">Check if results are open</button></div>`;
+    document.getElementById('r').onclick = () => viewAfter(set); return;
+  }
+  const draw = () => {
+    $app.innerHTML = `<div class="panel"><h2>Class results</h2>${resultsHtml(buildStats(stats.cells, stats.count), mine, sortBy)}</div>`;
+    bindSort($app, (s) => { sortBy = s; draw(); });
+  };
+  draw();
+}
+
+/* --------------------------------------------------------------- teacher */
+async function teacherView() {
+  document.getElementById('who').textContent = 'Teacher';
+  const token = teacherToken();
+  if (!token) {
+    $app.innerHTML = `<div class="panel"><h2>Teacher mode</h2><p class="lead">Sign in once on the course app (open it with <b>?teacher</b> and enter the e-mail code), then reload this page. This page uses the same sign-in.</p><button id="r">Reload</button></div>`;
+    document.getElementById('r').onclick = () => location.reload(); return;
+  }
+  try {
+    const set = await getSet();
+    if (!set) { $app.innerHTML = '<div class="panel"><h2>Table not ready</h2><p class="lead">Run the card-sort SQL block in Supabase first (supabase/schema.sql).</p></div>'; return; }
+    const [subs, stats] = await Promise.all([
+      api(`rest/v1/cardsort_submission?set_id=eq.${SET}&select=student_key,student_name,submitted_at,placements&order=submitted_at.asc`, { token }),
+      rpc('cardsort_stats', { p_set: SET }, token),
+    ]);
+    const draw = () => {
+      $app.innerHTML = `
+      <div class="panel"><h2>Teacher controls</h2>
+        <div class="row">
+          <button id="tOpen" class="${set.open ? '' : 'primary'}">${set.open ? 'Close the sort (stop submissions)' : 'Open the sort for students'}</button>
+          <button id="tRel" class="${set.results_released ? '' : 'primary'}">${set.results_released ? 'Hide results from students' : 'Show results to students'}</button>
+          <button id="csv">Download CSV</button><button id="rl">Refresh</button>
+        </div>
+        <p class="note">Sort is <b>${set.open ? 'OPEN' : 'CLOSED'}</b> · results are <b>${set.results_released ? 'SHOWN to students' : 'HIDDEN from students'}</b> (you always see them here).</p>
+        <p class="note">Student link: <b>${esc(location.origin + location.pathname)}</b></p>
+      </div>
+      <div class="panel"><h2>Class results</h2>${resultsHtml(buildStats(stats.cells, subs.length), null, sortBy)}</div>
+      <div class="panel"><h2>Submitted (${subs.length})</h2>
+        <table>${subs.map((s) => `<tr><td>${esc(s.student_name)}</td><td class="note">${new Date(s.submitted_at).toLocaleString()}</td><td><button data-del="${esc(s.student_key)}">Let them redo</button></td></tr>`).join('') || '<tr><td class="note">No submissions yet.</td></tr>'}</table>
+      </div>`;
+      bindSort($app, (s) => { sortBy = s; draw(); });
+      const patch = async (b) => { Object.assign(set, b); await api(`rest/v1/cardsort_set?id=eq.${SET}`, { method: 'PATCH', token, body: b, prefer: 'return=minimal' }); draw(); };
+      document.getElementById('tOpen').onclick = () => patch({ open: !set.open });
+      document.getElementById('tRel').onclick = () => patch({ results_released: !set.results_released });
+      document.getElementById('rl').onclick = teacherView;
+      document.getElementById('csv').onclick = () => {
+        const lines = [['student', ...CARDS.map((c) => c.label)].join(',')];
+        subs.forEach((s) => lines.push([s.student_name, ...CARDS.map((c) => (GRP[s.placements[c.id]] || {}).name || '')].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')));
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' })); a.download = 'cardsort-library.csv'; a.click();
+      };
+      $app.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
+        if (!confirm('Delete this submission so the student can sort again?')) return;
+        await api(`rest/v1/cardsort_submission?set_id=eq.${SET}&student_key=eq.${encodeURIComponent(b.dataset.del)}`, { method: 'DELETE', token, prefer: 'return=minimal' });
+        teacherView();
+      }));
+    };
+    draw();
+  } catch (e) { $app.innerHTML = `<div class="panel"><h2>Could not load</h2><p class="err">${esc(e.message || e)}</p></div>`; }
+}
+
+/* ---------------------------------------------------------------- start */
+if (new URLSearchParams(location.search).has('teacher')) teacherView();
+else if (name) enter(); else viewName();
+</script>
+</body>
+</html>
