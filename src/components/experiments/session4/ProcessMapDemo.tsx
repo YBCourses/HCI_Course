@@ -64,12 +64,37 @@ const PATH = `M ${X0} ${Y1} H ${X0 + 5 * DX} A ${R} ${R} 0 0 1 ${X0 + 5 * DX} ${
 const nodeXY = (i: number) => (i <= 5 ? { x: X0 + i * DX, y: Y1 } : { x: X0 + (11 - i) * DX, y: Y2 });
 const nodePos = (i: number) => (i <= 5 ? i * DX : 5 * DX + TURN + (i - 6) * DX);
 
+// Structure mode: S4 and S5 outputs/artifacts as they stand after Session 5.
+const STRUCT_OUT: Record<number, string> = {
+  3: 'The Requirements Pack: personas, journeys and prioritised requirements',
+  4: 'The Structure Pack: content inventory, groups, labels, tree and tree-test results',
+};
+const STRUCT_ARTIFACT: Record<number, string> = {
+  3: 'Requirements Pack: 2 personas, a journey with its low point at 03:30, and 12 requirements (5 Musts, about 1,300 euros in our case).',
+  4: 'An inventory of 19 things, 4 groups, labels in French and Arabic, and a tree. Tree test: 7 of 12 found a changed order.',
+};
+
+// Interaction mode: S4, S5 and S6 outputs/artifacts as they stand after Session 6.
+const INTER_OUT: Record<number, string> = {
+  3: 'The Requirements Pack: personas, journeys and prioritised requirements',
+  4: 'The Structure Pack: content inventory, groups, labels, tree and tree-test results',
+  5: 'The Interaction Pack: flows, a state table, feedback rules and an error plan',
+};
+const INTER_ARTIFACT: Record<number, string> = {
+  3: 'Requirements Pack: 2 personas, a journey with its low point at 03:30, and 12 requirements (5 Musts, about 1,300 euros in our case).',
+  4: 'Structure Pack: an inventory of 19 things, 4 groups (NOW, ORDERS, PACKING AND LOADING, NIGHT RECORD), labels in French and Arabic, and a tree-tested tree.',
+  5: 'A flow "Handle a late change" (9 steps today, 4 proposed), 6 states of "I saw it", feedback rules and an error plan.',
+};
+
 const BTN = 'rounded-xl px-5 py-3.5 text-[24px] font-bold flex items-center gap-2';
 const SECONDARY = `${BTN} bg-white border border-[#E8E2D9] text-[#525254] hover:bg-stone-100`;
 const PRIMARY = `${BTN} bg-[#E5391C] hover:bg-[#C92B10] text-white disabled:opacity-40 disabled:hover:bg-[#E5391C]`;
 
-export const ProcessMapDemo: React.FC<{ here: 'user' | 'need' }> = ({ here }) => {
-  const hereIdx = here === 'user' ? 2 : 3;
+export const ProcessMapDemo: React.FC<{ here: 'user' | 'need' | 'structure' | 'interaction' }> = ({ here }) => {
+  const hereIdx = here === 'user' ? 2 : here === 'need' ? 3 : here === 'structure' ? 4 : 5;
+  const struct = here === 'structure';
+  const inter = here === 'interaction';
+  const outOf = (i: number) => (struct && STRUCT_OUT[i]) || (inter && INTER_OUT[i]) || STAGES[i].out;
   const doneCount = hereIdx + 1;
   const [shown, setShown] = useState(doneCount);
   const [selected, setSelected] = useState<number | null>(null);
@@ -118,7 +143,7 @@ export const ProcessMapDemo: React.FC<{ here: 'user' | 'need' }> = ({ here }) =>
         </button>
         <div className="flex-1" />
         <div className="text-[28px] text-[#525254]">
-          {here === 'user' ? 'After Session 3: ' : 'After Session 4: '}
+          {here === 'user' ? 'After Session 3: ' : here === 'need' ? 'After Session 4: ' : struct ? 'After Session 5: ' : 'After Session 6: '}
           <b className="text-[#222222]">{doneCount} of 12 stages done</b>. Click any stage.
         </div>
       </div>
@@ -187,6 +212,20 @@ export const ProcessMapDemo: React.FC<{ here: 'user' | 'need' }> = ({ here }) =>
               <b className="text-[#E5391C]">What is missing: the need.</b> We know the people and what the hall does to them. We still must say what the system has to do for them.
             </span>
           </>
+        ) : inter ? (
+          <>
+            <ArrowRight className="w-9 h-9 text-emerald-700 flex-shrink-0" />
+            <span>
+              <b className="text-emerald-700">Out of Session 6:</b> the Interaction Pack goes to Session 7, where UI design gives it a look: type, space, colour and grids.
+            </span>
+          </>
+        ) : struct ? (
+          <>
+            <ArrowRight className="w-9 h-9 text-emerald-700 flex-shrink-0" />
+            <span>
+              <b className="text-emerald-700">Out of Session 5:</b> the Structure Pack goes to Session 6, where Interaction design gives every path flows, states and feedback.
+            </span>
+          </>
         ) : (
           <>
             <ArrowRight className="w-9 h-9 text-emerald-700 flex-shrink-0" />
@@ -227,21 +266,21 @@ export const ProcessMapDemo: React.FC<{ here: 'user' | 'need' }> = ({ here }) =>
                   <LogIn className="w-6 h-6" />
                   IN {selected > 0 && <span className="text-[22px] font-medium text-[#6E6D70]">from {STAGES[selected - 1].name}</span>}
                 </div>
-                <div className="text-[24px] leading-[1.25] text-[#222222]">{selected === 0 ? 'A problem seen in the real world' : STAGES[selected - 1].out}</div>
+                <div className="text-[24px] leading-[1.25] text-[#222222]">{selected === 0 ? 'A problem seen in the real world' : outOf(selected - 1)}</div>
               </div>
               <div className="rounded-xl bg-white border border-[#E8E2D9] p-3 flex flex-col gap-1 min-h-0">
                 <div className="flex items-center gap-2 text-[26px] font-bold text-emerald-600">
                   <LogOut className="w-6 h-6" />
                   OUT {selected < 11 && <span className="text-[22px] font-medium text-[#6E6D70]">goes to {STAGES[selected + 1].name}</span>}
                 </div>
-                <div className="text-[24px] leading-[1.25] text-[#222222]">{sel.out}</div>
+                <div className="text-[24px] leading-[1.25] text-[#222222]">{outOf(selected)}</div>
               </div>
               <div className="rounded-xl bg-white border-2 border-[#E5391C] p-3 flex flex-col gap-1 min-h-0">
                 <div className="flex items-center gap-2 text-[26px] font-bold text-[#E5391C]">
                   {selected < doneCount ? <FileText className="w-6 h-6" /> : <HelpCircle className="w-6 h-6" />}
                   {selected < doneCount ? 'Fresh Batch artifact' : 'The question it answers'}
                 </div>
-                <div className="text-[24px] leading-[1.25] text-[#222222]">{selected < doneCount && sel.artifact ? sel.artifact : sel.question}</div>
+                <div className="text-[24px] leading-[1.25] text-[#222222]">{selected < doneCount ? (struct && STRUCT_ARTIFACT[selected]) || (inter && INTER_ARTIFACT[selected]) || sel.artifact || sel.question : sel.question}</div>
               </div>
             </div>
           </>

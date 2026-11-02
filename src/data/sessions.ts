@@ -58,13 +58,13 @@ export const COURSE_SESSIONS: SessionInfo[] = [
   {
     id: 5,
     sessionNumber: 'SESSION 05',
-    title: 'Information Architecture & Mental Models',
-    subtitle: 'Card Sorting, Navigation Hierarchies, Ontologies & Wayfinding',
+    title: 'Structure',
+    subtitle: 'Information Architecture, Card Sorting, Labels & Wayfinding',
     durationHours: 4,
     status: 'upcoming',
-    description: 'Tree testing, open/closed card sorting, taxonomic structures, navigational patterns, and mental model matching.',
-    actCount: 5,
-    slideCount: 40,
+    description: 'From the Requirements Pack to a content inventory, mental models, open and closed card sorting, labels, hierarchies, navigation and wayfinding, and tree testing, with a studio that builds the Structure Pack.',
+    actCount: 6,
+    slideCount: 56,
   },
   {
     id: 6,

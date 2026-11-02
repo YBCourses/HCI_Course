@@ -29,6 +29,8 @@ import { SlideRenderer } from '../slides/SlideRenderer';
 import { SlideRendererSession2 } from '../slides/SlideRendererSession2';
 import { SlideRendererSession3 } from '../slides/SlideRendererSession3';
 import { SlideRendererSession4 } from '../slides/SlideRendererSession4';
+import { SlideRendererSession5 } from '../slides/SlideRendererSession5';
+import { SLIDES_DATA_SESSION_5, ACTS_METADATA_SESSION_5 } from '../../data/slidesSession5';
 import { SLIDES_DATA_SESSION_4, ACTS_METADATA_SESSION_4 } from '../../data/slidesSession4';
 import { SLIDES_DATA_SESSION_3, ACTS_METADATA_SESSION_3 } from '../../data/slidesSession3';
 import { SlideDemoControlSample, DEMO_SLIDES, DEMO_SLIDE_COUNT } from '../slides/SlideDemoControlSample';
@@ -102,8 +104,8 @@ export const SlideDeck: React.FC = () => {
   const [isClassOpen, setIsClassOpen] = useState<boolean>(false);
 
   // Active session data source
-  const activeSlides = activeSessionId === 4 ? SLIDES_DATA_SESSION_4 : activeSessionId === 3 ? SLIDES_DATA_SESSION_3 : activeSessionId === 2 ? SLIDES_DATA_SESSION_2 : SLIDES_DATA;
-  const activeActs = activeSessionId === 4 ? ACTS_METADATA_SESSION_4 : activeSessionId === 3 ? ACTS_METADATA_SESSION_3 : activeSessionId === 2 ? ACTS_METADATA_SESSION_2 : ACTS_METADATA;
+  const activeSlides = activeSessionId === 5 ? SLIDES_DATA_SESSION_5 : activeSessionId === 4 ? SLIDES_DATA_SESSION_4 : activeSessionId === 3 ? SLIDES_DATA_SESSION_3 : activeSessionId === 2 ? SLIDES_DATA_SESSION_2 : SLIDES_DATA;
+  const activeActs = activeSessionId === 5 ? ACTS_METADATA_SESSION_5 : activeSessionId === 4 ? ACTS_METADATA_SESSION_4 : activeSessionId === 3 ? ACTS_METADATA_SESSION_3 : activeSessionId === 2 ? ACTS_METADATA_SESSION_2 : ACTS_METADATA;
 
   // --------------------------------------------------------------------------
   // ADAPTIVE UNIVERSAL DISPLAY & PROJECTION STATE
@@ -136,7 +138,7 @@ export const SlideDeck: React.FC = () => {
   // If the session on screen is not open to students (yet, or any more), move to the latest open one.
   useEffect(() => {
     if (!canOpenSession(activeSessionId, releases, showTeacher)) {
-      const open = [4, 3, 2, 1].find((id) => canOpenSession(id, releases, showTeacher));
+      const open = [5, 4, 3, 2, 1].find((id) => canOpenSession(id, releases, showTeacher));
       if (open && open !== activeSessionId) {
         setIsDemoMode(false);
         setActiveSessionId(open);
@@ -491,6 +493,12 @@ export const SlideDeck: React.FC = () => {
                       onPrev={goToPrevSlide}
                       onSelect={setDemoSlideIndex}
                     />
+                  ) : activeSessionId === 5 ? (
+                    <SlideRendererSession5
+                      slide={currentSlide}
+                      onNextSlide={goToNextSlide}
+                      onOpenTimer={openTimerWithSettings}
+                    />
                   ) : activeSessionId === 4 ? (
                     <SlideRendererSession4
                       slide={currentSlide}
@@ -537,6 +545,12 @@ export const SlideDeck: React.FC = () => {
                       onNext={goToNextSlide}
                       onPrev={goToPrevSlide}
                       onSelect={setDemoSlideIndex}
+                    />
+                  ) : activeSessionId === 5 ? (
+                    <SlideRendererSession5
+                      slide={currentSlide}
+                      onNextSlide={goToNextSlide}
+                      onOpenTimer={openTimerWithSettings}
                     />
                   ) : activeSessionId === 4 ? (
                     <SlideRendererSession4
@@ -670,6 +684,20 @@ export const SlideDeck: React.FC = () => {
                 title="Switch to Session 4: The Need"
               >
                 S04
+              </button>}
+              {canOpen(5) && <button
+                onClick={() => {
+                  setIsDemoMode(false);
+                  switchSession(5);
+                }}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                  !isDemoMode && activeSessionId === 5
+                    ? 'bg-[#E5391C] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+                title="Switch to Session 5: Structure"
+              >
+                S05
               </button>}
             </div>
 
